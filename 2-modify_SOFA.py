@@ -25,6 +25,7 @@ parser.add_argument('--output',             '-o', type=str, help='Path to output
 parser.add_argument('--new_num_channels',   '-ch', type=int, help='Number of channels for the output SOFA file')
 parser.add_argument('--new_ir_length',      '-ir', type=int, help='IR length for the output SOFA file')
 parser.add_argument('--verbose',            '-v', action='store_true', help='Print verbose information')
+parser.add_argument('--force_overwrite',    '-f', action='store_true', help='Write over existing file')
 args = parser.parse_args()
 
 # Check if --sofa is provided
@@ -33,7 +34,7 @@ if args.input is None:
     sys.exit()
 if args.output is None:
     print('--out argument was not provided, so only input sofa information will be printed')
-elif os.path.exists(args.output) or os.path.exists(args.output+'.sofa'):
+elif (os.path.exists(args.output) or os.path.exists(args.output+'.sofa')) and not args.force_overwrite:
     print('Output file already exists. Please provide a different name')
     sys.exit()
 elif not os.path.exists(os.path.dirname(os.path.abspath(args.output))):
@@ -47,7 +48,7 @@ if not os.path.exists(args.input):
 
 SOFA_PATH = args.input
 
-sofafile = sofar.read_sofa(SOFA_PATH, verify=False, verbose=True)
+sofafile = sofar.read_sofa(SOFA_PATH, verify=False, verbose=args.verbose)
 
 # sofafile.add_missing()
 # sofafile.add_attribute('ListenerView_Units', 'metre') #, dtype='string', dimensions=None)
@@ -149,19 +150,22 @@ if args.output is not None:
     # | Then modify IR length  |
     # +------------------------+
 
+    # In the case of shortening the IRs, we will just cut the IRs
+    # In the case of lengthening the IRs, we will add noise to the middle of the IRs, in what is possibly the sustain part of the IR, keeping tails more realistic
+
     cur_num_channes = args.new_num_channels if args.new_num_channels is not None else input_dimensions['R']
     if args.new_ir_length is not None and args.new_ir_length != input_dimensions['N']:
         if args.new_ir_length < input_dimensions['N']:
-            print('Reducing IR length from %d to %d'%(input_dimensions['N'], args.new_ir_length))
-            new_irs = new_irs[:,:,:args.new_ir_length]
+            print('Reducing IR length from %d to %d cutting the middle'%(input_dimensions['N'], args.new_ir_length))
+            # new_irs = new_irs[:,:,:args.new_ir_length] ## The old way was to cut from the end, but it messes with the tail
+            # Cut the IRs in the middle
+            halflen1 = int(args.new_ir_length/2)
+            halflen2 = args.new_ir_length - halflen1
+            new_irs = np.concatenate((new_irs[:,:,:halflen1],
+                                      new_irs[:,:,input_dimensions['N']-halflen2:]), axis=2)
+            assert new_irs.shape[2] == args.new_ir_length, 'New IR length is not correct (is %d but should be %d)'%(new_irs.shape[2], args.new_ir_length)
         else:
             print('Inflating IR length from %d to %d'%(input_dimensions['N'], args.new_ir_length))
-            # If new IR length is greater than existing, add white noise to the end of the IRs to avoid silent partitions that may be optimized away when convolving
-            # for i in range(args.new_ir_length - input_dimensions['N']):
-            #     # Random numbers between -1 and 1
-            #     print('About to add noise with shape (%d, %d, 1)'%(input_dimensions['M'], cur_num_channes))
-            #     noise = np.random.rand(input_dimensions['M'], cur_num_channes, 1) * 2 - 1
-            #     new_irs = np.concatenate((new_irs, noise), axis=2)
 
             # Add noise of shape (M, R, newN-oldN) to IRs
             noise = np.random.rand(input_dimensions['M'], cur_num_channes, args.new_ir_length - input_dimensions['N']) * 2 - 1
@@ -169,7 +173,9 @@ if args.output is not None:
             gain = 10**(-30/20)
             noise = noise * gain
             # print('Noise shape:', noise.shape)
-            new_irs = np.concatenate((new_irs, noise), axis=2)
+            # new_irs = np.concatenate((new_irs, noise), axis=2)
+            # Add noise to the middle of the IRs]
+            new_irs = np.concatenate((new_irs[:,:,:int(args.new_ir_length/2)], noise, new_irs[:,:,int(args.new_ir_length/2):]), axis=2)
 
     else:
         print('IR length will remain the same')
