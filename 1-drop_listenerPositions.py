@@ -3,7 +3,7 @@
 # Currently, indexes are hardcoded to 189 and 192 for the Tindari SOFA and will keep just 3 positions
 
 # Usage:
-# ? python 1-drop_listenerPositions.py --input "D:/develop-farina-proj/MATRICES(hrtf-and-SOFA)/SOFA/ambix_o7_test.sofa" --output "D:/develop-farina-proj/MATRICES(hrtf-and-SOFA)/SOFA/ambix_o7_test_3listeners.sofa" --verbose
+# ? python 1-drop_listenerPositions.py --input input.sofa --output updated_output.sofa --verbose
 ##
 
 
