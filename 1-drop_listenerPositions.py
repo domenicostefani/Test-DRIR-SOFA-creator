@@ -1,17 +1,15 @@
 ##
-# Modify number of channels and IR length in SOFA to create test files for performance/load measures of convolution plugins.
-#
+# Drop all listener from a SOFA file except for those between indexes IR_TO_KEEP_MIN and IR_TO_KEEP_MAX
+# Currently, indexes are hardcoded to 189 and 192 for the Tindari SOFA and will keep just 3 positions
+
 # Usage:
-# ? python modify_SOFA.py --input <path to input SOFA file> --output <path to output SOFA file> --new_num_channels <number of channels> --new_ir_length <IR length>
-#
-# Example:
-# > python modify_SOFA.py --input "test.sofa" --output "test_modified.sofa" --new_num_channels 64
-#
-# This will create a new SOFA file with 64 channels and the same IR length as the input file.
-# If the original file has more than 64 channels, the new will be just the first 64 channels.
-# If the original file has less than 64 channels, the new will be just copies of previous IRs
-#
+# ? python 1-drop_listenerPositions.py --input "D:/develop-farina-proj/MATRICES(hrtf-and-SOFA)/SOFA/ambix_o7_test.sofa" --output "D:/develop-farina-proj/MATRICES(hrtf-and-SOFA)/SOFA/ambix_o7_test_3listeners.sofa" --verbose
 ##
+
+
+IR_TO_KEEP_MIN = 189
+IR_TO_KEEP_MAX = 192
+assert IR_TO_KEEP_MIN < IR_TO_KEEP_MAX
 
 import sofar, os,sys,argparse, numpy as np
 
@@ -79,9 +77,6 @@ print()
 
 del SOFA_PATH # Prevent accidental usage of input path
 
-IR_TO_KEEP_MIN = 189
-IR_TO_KEEP_MAX = 192
-assert IR_TO_KEEP_MIN < IR_TO_KEEP_MAX
 
 # print(args.verbose)
 
