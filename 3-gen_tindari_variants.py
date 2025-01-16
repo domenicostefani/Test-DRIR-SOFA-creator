@@ -5,7 +5,6 @@
 ##
 
 import os
-import matplotlib.pyplot as plt
 
 channel_numbers = [16,36,64]
 ir_lengths_seconds = [0.1,0.2,0.5,1,2,5,10]
@@ -15,11 +14,9 @@ SOFAFILE = './tindari_drop.sofa'
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT_PATH = os.path.abspath("2-modify_SOFA.py")
 
+command = lambda id,ch, length_samp, lengthstring: f"python {SCRIPT_PATH} -i {SOFAFILE} -o ./{id}_{ch}ch_{lengthstring}_tindari_drop.sofa -ch {ch} -ir {length_samp}"
 
-command = lambda id,ch, length_samp, lengthstring: f"python {SCRIPT_PATH} -i {SOFAFILE} -o ./{id}_{ch}ch_{lengthstring}_tindari_drop.sofa -ch {ch} -l {length_samp}"
-
-
-id = 0
+id = 1
 test_x = []
 test_y = []
 test_label = []
@@ -32,25 +29,10 @@ for idch,ch in enumerate(channel_numbers):
         else:
             lengthstring = f"{length}s"
 
-        strid = str(id).zfill(3)
+        strid = str(id).zfill(2)
         print(command(strid,ch,length_samp,lengthstring))
+        os.system(command(strid,ch,length_samp,lengthstring))
 
-        test_x.append(length + idch*(0.1*length))
-        test_y.append(ch+length)
-        test_label.append(f"{ch}ch {lengthstring}")
-        
         id+=1
-
-
-fig, ax = plt.subplots()
-
-# Barplot with all different colors per bar
-ax.bar(test_x, test_y, color=[f'C{i}' for i in range(len(test_x))])
-# ax.set_xscale('log') 
-
-ax.set_xticks(test_x)
-ax.set_xticklabels(test_label, rotation=90)
-
-plt.show()
 
 
